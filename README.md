@@ -1,7 +1,7 @@
 # SWUFEPowerConsum
 西南财经大学易校园用电量自动获取
 
-基于python的requests库写的简易程序，可以在Linux服务器运行。
+基于python3.9.18的requests库写的简易程序，可以在Linux服务器运行。
 
 balance为剩余电量，会和时间以及变化量储存在同一目录下的csv文件中。
 
