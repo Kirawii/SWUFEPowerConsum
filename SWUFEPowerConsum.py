@@ -5,43 +5,58 @@ import logging
 import csv
 import os
 
-# 设置日志配置
+# 设置日志配置，使用唯一化的日志文件名
+log_filename = f'balance_data_{time.strftime("%Y%m%d_%H%M%S")}.log'
 logging.basicConfig(
-    filename='balance_data.log',  # 日志文件名
-    level=logging.INFO,  # 记录级别
-    format='%(asctime)s - %(levelname)s - %(message)s',  # 日志格式
+    filename=log_filename,
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
 )
 
-# 请求的 URL
-url = 
+# 请求的 URL 和 Headers 保持不变
+url = ''
 
-# 请求头
 headers = {
-    
 }
 
-# Cookies
 cookies = {
+}
+
+data = {
    
 }
 
-
-# 请求体数据
-data = {
-}
-
+csv_file_path = 'balance_data.csv'
 balance_data = []
 balance_changes = []
 timestamps = []
 
-# 创建 CSV 文件并写入表头
-csv_file_path = 'balance_data.csv'
+# 读取CSV最后一行以获取上次的 balance 和 timestamp
+def get_last_record_from_csv(file_path):
+    if os.path.exists(file_path):
+        with open(file_path, mode='r', newline='', encoding='utf-8') as csvfile:
+            reader = csv.reader(csvfile)
+            rows = list(reader)
+            if len(rows) > 1:  # 确保文件有数据
+                last_row = rows[-1]
+                last_timestamp = last_row[0]
+                last_balance = float(last_row[1])
+                return last_timestamp, last_balance
+    return None, None
+
+# 获取上次的记录
+last_timestamp, last_balance = get_last_record_from_csv(csv_file_path)
+
+# 如果没有历史数据，初始化为 0
+if last_balance is None:
+    last_balance = 0
+
+# 创建 CSV 文件并写入表头（仅在文件不存在时）
 if not os.path.exists(csv_file_path):
     with open(csv_file_path, mode='w', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(['Timestamp', 'Balance', 'Change'])  # 加入 'Change' 表头
 
-# 无限循环
 while True:
     try:
         response = requests.post(url, headers=headers, cookies=cookies, data=data)
@@ -51,52 +66,47 @@ while True:
                 response_data = response.json()
                 balance = float(response_data.get('balance'))  # 获取 balance 数据
                 if balance is not None:
-                    if balance_data:
-                        change = balance_data[-1] - balance
-                        if change > 0:
-                            balance_changes.append(change)
-                        else:
+                    # 计算变化值
+                    if last_balance != 0:
+                        change = last_balance - balance
+                        if change < 0:
                             change = 0  # 如果balance增加，将减少值设为0
                     else:
                         change = 0
-                    balance_data.append(balance)
 
-                    # 获取当前时间，格式化为 YYYY-MM-DD HH:MM:SS
-                    timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-                    timestamps.append(timestamp)
+                    # 更新记录
+                    last_balance = balance
+                    last_timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
-                    log_message = f'当前时间: {timestamp}, Balance: {balance}, 减少值: {change}'
-                    print(log_message)  # 打印到控制台
-                    logging.info(log_message)  # 写入日志文件
+                    log_message = f'当前时间: {last_timestamp}, Balance: {balance}, 变化值: {change}'
+                    print(log_message)
+                    logging.info(log_message)
 
                     # 写入 CSV 文件，保存时间戳、余额和减少值
                     with open(csv_file_path, mode='a', newline='', encoding='utf-8') as csvfile:
                         writer = csv.writer(csvfile)
-                        writer.writerow([timestamp, balance, change])  # 写入减少值
+                        writer.writerow([last_timestamp, balance, change])
+
                 else:
                     logging.warning('未找到 balance 数据')
+
             except ValueError:
                 error_message = '响应不是有效的 JSON'
-                print(error_message)  # 调试
+                print(error_message)
                 logging.error(error_message)
-                logging.error(response.text)  # 调试
+                logging.error(response.text)
         else:
             error_message = f'请求失败，状态码：{response.status_code}'
             print(error_message)
             logging.error(error_message)
             logging.error(response.text)
 
-        # 随机化访问时间（在30到60分钟之间随机）
-        wait_time = random.randint(1800, 3600) 
+        # 等待 30 到 60 分钟之间的随机时间
+        wait_time = random.randint(1800, 3600)  # 600到1200秒
         time.sleep(wait_time)
 
     except Exception as e:
-        # 捕获任何异常并记录
         error_message = f'发生异常: {str(e)}'
         print(error_message)
         logging.error(error_message)
-
-        # 等待几秒后重启
-        time.sleep(5)  # 等待5秒后再重启
-
-
+        time.sleep(60)  # 等待5秒后再重启
