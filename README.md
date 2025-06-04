@@ -1,7 +1,7 @@
 # SWUFEPowerConsum
 西南财经大学易校园用电量自动获取
 
-需要自己抓取相关api，此项目不提供任何api和cookies。
+需要自己抓取相关请求，此项目不提供任何api和cookies。
 
 基于python3.9.18的requests库写的简易程序，可以在Linux服务器运行。
 
