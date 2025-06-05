@@ -3,7 +3,7 @@
 
 需要自己抓取相关请求，此项目不提供任何api和cookies。
 
-基于python3.9.18的requests库写的简易程序，可以在Linux服务器运行。
+基于python3.9.18的requests库写的简易程序。
 
 在太高版本的python上无法运行，因为高版本python删除了cgi库，导致requests库出现错误。
 
